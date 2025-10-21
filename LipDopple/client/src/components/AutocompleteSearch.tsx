@@ -135,7 +135,7 @@ export function AutocompleteSearch({ onSearch, placeholder }: AutocompleteSearch
 
       {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-popover border rounded-lg shadow-lg max-h-80 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-2 bg-background border border-border rounded-lg shadow-lg max-h-80 overflow-y-auto">
           {suggestions.map((lipstick, index) => (
             <button
               key={lipstick.id}
