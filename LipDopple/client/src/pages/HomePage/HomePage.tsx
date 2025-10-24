@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { searchLipsticks, SearchResult } from "../../lib/search-utils";
-import type { Lipstick } from "../../lib/lipstick-database";
-import { ResultsFilter, SortOption } from "../../components/ResultsFilter";
+import { searchLipsticks, type SearchResult } from "../../lib/lipstick-search";
+import type { Lipstick } from "../../lib/lipstick-types";
+import { ResultsFilter, type SortOption } from "../../components/ResultsFilter";
 import { SearchTabs } from "./SearchTabs";
 import { SearchResults } from "./SearchResults";
 import { LoadingSpinner } from "./LoadingSpinner";
@@ -29,40 +29,43 @@ export default function HomePage() {
     setUndertoneFilter("all");
   };
 
-  const handleSearch = (query: string, lipstick?: Lipstick) => {
+  const handleSearch = async (query: string, lipstick?: Lipstick) => {
     setIsSearching(true);
     setSearchQuery(query);
     resetFilters();
 
-    setTimeout(() => {
-      const results = searchLipsticks(query, lipstick);
+    try {
+      const results = await searchLipsticks(query, lipstick); // now async from backend
       setSearchResults(results);
+    } catch (err) {
+      console.error("Search error:", err);
+      setSearchResults([]);
+    } finally {
       setIsSearching(false);
-    }, 600);
+    }
   };
 
-  const handleImageUpload = (file: File) => {
+  const handleImageUpload = async (file: File) => {
+    // Placeholder for image-based search (future)
     setIsSearching(true);
     setSearchQuery("your uploaded image");
     resetFilters();
 
-    setTimeout(() => {
-      const results = searchLipsticks("red matte lipstick");
-      setSearchResults(results);
-      setIsSearching(false);
-    }, 1500);
+    // temporarily use a default query
+    const results = await searchLipsticks("red matte lipstick");
+    setSearchResults(results);
+    setIsSearching(false);
   };
 
-  const handleIngredientsSearch = (ingredients: string) => {
+  const handleIngredientsSearch = async (ingredients: string) => {
+    // Placeholder for ingredients-based search (future)
     setIsSearching(true);
     setSearchQuery("similar formulas");
     resetFilters();
 
-    setTimeout(() => {
-      const results = searchLipsticks("matte lipstick");
-      setSearchResults(results);
-      setIsSearching(false);
-    }, 1200);
+    const results = await searchLipsticks("matte lipstick");
+    setSearchResults(results);
+    setIsSearching(false);
   };
 
   return (
@@ -75,6 +78,7 @@ export default function HomePage() {
         />
 
         {isSearching && <LoadingSpinner />}
+
         {!isSearching && searchResults && (
           <SearchResults
             results={searchResults}
@@ -95,6 +99,7 @@ export default function HomePage() {
             }}
           />
         )}
+
         {!isSearching && !searchResults && <EmptyState />}
       </main>
     </div>

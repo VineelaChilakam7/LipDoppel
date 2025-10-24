@@ -1,7 +1,7 @@
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { AutocompleteSearch } from "./AutocompleteSearch";
-import type { Lipstick } from "../lib/lipstick-database";
+import type { Lipstick } from "../lib/lipstick-service";
 
 interface SearchFormProps {
   onSearch: (query: string, lipstick?: Lipstick) => void;

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "./ui/input";
-import { lipstickDatabase, type Lipstick } from "../lib/lipstick-database";
 import Fuse from "fuse.js";
+import type { Lipstick } from "../lib/lipstick-service";
+import { fetchAllLipsticks } from "../lib/lipstick-service";
 
 interface AutocompleteSearchProps {
   onSearch: (query: string, lipstick?: Lipstick) => void;
@@ -14,29 +15,36 @@ export function AutocompleteSearch({ onSearch, placeholder }: AutocompleteSearch
   const [suggestions, setSuggestions] = useState<Lipstick[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [allLipsticks, setAllLipsticks] = useState<Lipstick[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Fuse.js for fuzzy search
-  const fuse = new Fuse(lipstickDatabase, {
+  // Load all lipsticks once
+  useEffect(() => {
+    fetchAllLipsticks()
+      .then(setAllLipsticks)
+      .catch((err) => console.error("Error loading lipsticks:", err));
+  }, []);
+
+  // Initialize Fuse.js once allLipsticks is loaded
+  const fuse = new Fuse(allLipsticks, {
     keys: [
       { name: "name", weight: 2 },
       { name: "brand", weight: 2 },
       { name: "shade", weight: 1.5 },
-      { name: "searchTerms", weight: 1 },
       { name: "finish", weight: 0.5 },
+      { name: "undertone", weight: 0.5 },
     ],
     threshold: 0.4,
     includeScore: true,
   });
 
-  // Handle clicks outside to close suggestions
+  // Handle clicks outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -54,12 +62,11 @@ export function AutocompleteSearch({ onSearch, placeholder }: AutocompleteSearch
     setSuggestions(matchedLipsticks);
     setShowSuggestions(matchedLipsticks.length > 0);
     setSelectedIndex(-1);
-  }, [query]);
+  }, [query, allLipsticks]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      // If a suggestion is selected, use it
       if (selectedIndex >= 0 && suggestions[selectedIndex]) {
         onSearch(query, suggestions[selectedIndex]);
       } else {
@@ -77,13 +84,10 @@ export function AutocompleteSearch({ onSearch, placeholder }: AutocompleteSearch
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showSuggestions) return;
-
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex(prev => 
-          prev < suggestions.length - 1 ? prev + 1 : prev
-        );
+        setSelectedIndex(prev => prev < suggestions.length - 1 ? prev + 1 : prev);
         break;
       case "ArrowUp":
         e.preventDefault();
@@ -133,12 +137,11 @@ export function AutocompleteSearch({ onSearch, placeholder }: AutocompleteSearch
         </div>
       </form>
 
-      {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-2 bg-background border border-border rounded-lg shadow-lg max-h-80 overflow-y-auto">
           {suggestions.map((lipstick, index) => (
             <button
-              key={lipstick.id}
+              key={lipstick._id}
               type="button"
               onClick={() => handleSuggestionClick(lipstick)}
               className={`w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-center gap-3 ${
@@ -146,11 +149,7 @@ export function AutocompleteSearch({ onSearch, placeholder }: AutocompleteSearch
               }`}
             >
               <div className="w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                <img 
-                  src={lipstick.imageUrl} 
-                  alt={lipstick.name}
-                  className="w-full h-full object-cover"
-                />
+                <img src={lipstick.imageUrl} alt={lipstick.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="truncate">
